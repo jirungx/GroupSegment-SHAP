@@ -11,38 +11,33 @@
 [![Conference](https://img.shields.io/badge/Conference-CIKM_'26-blue?style=for-the-badge)](https://cikm2026.diag.uniroma1.it/)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.06114-b31b1b?style=for-the-badge)](https://arxiv.org/abs/2601.06114)
 
-<img width="5796" height="2520" alt="image" src="https://github.com/user-attachments/assets/faa5969d-ba74-433d-922b-21159648d544" />
-
+<!-- Main figure will be inserted here -->
 
 ## Abstract
 
-Multivariate time-series models achieve strong predictive performance in healthcare, industry, energy, and finance, but how they combine cross-variable interactions with temporal dynamics remains unclear. Existing time-series SHAP variants typically treat the feature and time axes independently, fragmenting structural signals formed jointly by multiple variables over specific intervals. We propose GroupSegment-SHAP (GS-SHAP), which constructs explanatory units as group-segment players based on cross-variable dependence and distribution shifts over time and quantifies each unit's contribution via Shapley attribution. We evaluate GS-SHAP across four real-world domains: human activity recognition, power-system forecasting, medical signal analysis, and financial time series. Compared with KernelSHAP, TimeSHAP, SequenceSHAP, WindowSHAP, and TSHAP, GS-SHAP achieves about 1.5× higher deletion-based faithfulness on average. In controlled synthetic evaluations, GS-SHAP achieves 24.4% higher IoU-based recovery than the strongest baseline. GS-SHAP also runs on average 3.38× faster than TimeSHAP across approximation budgets in power-system forecasting. These results demonstrate that group-segment players provide a faithful and computationally efficient explanation space for multivariate time-series models.
+Multivariate time-series models achieve strong predictive performance in healthcare, industry, energy, and finance, but how they combine cross-variable interactions with temporal dynamics remains unclear. SHapley Additive exPlanations (SHAP) has been widely used for interpretation. However, existing time-series variants typically treat the feature and time axes independently, fragmenting structural signals formed jointly by multiple variables over specific intervals. We propose GroupSegment-SHAP (GS-SHAP), which constructs explanatory units as group-segment players based on cross-variable dependence and distribution shifts over time, and then quantifies each unit's contribution via Shapley attribution. We evaluated GS-SHAP across four real-world domains: human activity recognition, power-system forecasting, medical signal analysis, and financial time series, and compared it with KernelSHAP, TimeSHAP, SequenceSHAP, WindowSHAP, and TSHAP. GS-SHAP achieves about 1.5× higher deletion-based faithfulness (ΔAUC) on average than the baselines. In synthetic evaluations with controlled ground-truth structures, GS-SHAP achieves 24.4% higher IoU-based recovery of multivariate-temporal patterns than the strongest baseline. In addition, GS-SHAP runs on average 3.38× faster than TimeSHAP across approximation budgets in power-system forecasting, showing that it can simultaneously achieve high explanatory faithfulness and computational efficiency. In a financial case study, GS-SHAP identifies interpretable multivariate-temporal interactions among key market variables across market regimes, highlighting its potential utility for risk-aware investment analysis.
 
 <br>
 
 ## Motivation
 
-- Multivariate time-series predictions often depend on **multiple variables evolving jointly over specific temporal intervals**, rather than isolated features or individual time points.
+- Existing SHAP-based time-series explainers often define players along a single axis, such as individual cells, time steps, fixed windows, or temporal subsequences.
 
-- Existing SHAP-based time-series explainers typically define players as individual cells, time steps, subsequences, or fixed temporal windows, which can fragment coupled multivariate-temporal patterns.
+- These player definitions can fragment multivariate-temporal evidence that arises jointly from multiple variables over specific intervals.
 
-- A suitable explanatory unit should jointly account for **cross-variable dependence** and **temporal distributional changes**.
+- In many practical settings, the most meaningful predictive evidence is formed by groups of variables changing together within specific temporal regimes.
 
-- We introduce **GS-SHAP**, which defines each Shapley player as the intersection of a dependency-based feature group and a group-specific temporal segment.
+- GS-SHAP addresses this player-space mismatch by constructing explanatory units that jointly reflect cross-variable dependence and temporal distribution shifts.
 
 <br>
 
 ## Contribution
 
-- **Group-segment explanatory units.** HSIC-based nonlinear dependency grouping and group-wise MMD segmentation define structurally coherent multivariate-temporal players.
+- **Group-segment players.** Group-segment players are introduced as a new Shapley player space that addresses player-space mismatch by representing structurally coherent variable-time regions in multivariate time series.
 
-- **Joint feature-time attribution.** GS-SHAP directly estimates Shapley values over group-segment players, reducing attribution fragmentation caused by feature-only, time-only, or fixed-window player definitions.
+- **General player-construction and attribution framework.** GS-SHAP reduces attribution fragmentation caused by feature-only, time-only, or fixed-window player definitions.
 
-- **Empirical faithfulness and structural recovery.** Across HAR, ETTm1, PTB-XL, and S&P500, GS-SHAP achieves the highest deletion-based faithfulness among the compared explainers and improves average synthetic Cell IoU by 24.4% over the strongest baseline.
-
-- **Computational efficiency and robustness.** GS-SHAP substantially reduces the player space and runs on average 3.38× faster than TimeSHAP on ETTm1 while remaining robust across masking baselines, segmentation settings, and predictive backbones.
-
-> **Note:** HSIC measures statistical dependence rather than causality. The resulting feature groups should therefore be interpreted as dependence-based explanatory units, not causal groups.
+- **Faithful, stable, and computationally efficient explanations.** GS-SHAP provides reliable attribution across heterogeneous multivariate time-series domains and controlled synthetic benchmarks.
 
 <br>
 
@@ -67,10 +62,10 @@ Install the required dependencies following `DEPENDENCIES.md`.
 ```text
 GroupSegment-SHAP/
 ├── gsshap/                 # Core GS-SHAP implementation
-├── preprocessing/          # Dataset preprocessing for HAR, ETTm1, PTB-XL, and S&P500
-├── scripts/                # Main executable experiments and evaluations
-├── DEPENDENCIES.md         # Environment and dependency information
-├── MANIFEST.md             # Repository file manifest
+├── preprocessing/          # Dataset preprocessing
+├── scripts/                # Main experiment scripts
+├── DEPENDENCIES.md
+├── MANIFEST.md
 └── README.md
 ```
 
@@ -78,115 +73,66 @@ GroupSegment-SHAP/
 
 ### 3. Pipeline Overview
 
-#### 3.1 Data Preprocessing
+#### 3.1 HSIC-Based Feature Grouping
 
-Dataset preparation utilities are provided under `preprocessing/` for the four datasets used in the paper:
+GS-SHAP first partitions the variable space into feature groups based on nonlinear cross-variable dependence. The implementation constructs an HSIC affinity matrix, determines the number of groups using the eigengap criterion, and applies spectral clustering.
 
-- HAR
-- ETTm1
-- PTB-XL
-- S&P500
+The HSIC affinity is estimated once from the training set and reused across explanation runs.
 
-The preprocessing pipeline constructs the fixed-length model inputs and dataset-specific variables used in the experiments.
+#### 3.2 MMD-Based Temporal Segmentation
 
-#### 3.2 GS-SHAP Attribution
+For each feature group, GS-SHAP detects distributional changes using Maximum Mean Discrepancy (MMD) and recursively partitions the time axis into group-specific temporal segments.
 
-The core implementation under `gsshap/` follows the four-stage procedure described in the paper:
+The implementation uses a permutation-calibrated split threshold and dataset-specific minimum segment lengths.
 
-1. HSIC-based feature grouping
-2. Group-wise MMD temporal segmentation
-3. Group-segment player construction
-4. Permutation-based Shapley attribution
+#### 3.3 Group-Segment Player Construction
 
-HSIC grouping uses up to 3,000 pooled training observations, selects the number of groups using the eigengap criterion, and applies spectral clustering to the HSIC affinity matrix.
+Each feature group is combined with its own temporal segments to define group-segment players of the form
 
-MMD segmentation is performed independently for each feature group with a permutation-calibrated split threshold.
+```text
+G_k × S_j^(k)
+```
 
-Default minimum segment lengths are:
+The resulting players form a non-overlapping partition of the input grid.
 
-| Dataset | Minimum segment length |
-|---|---:|
-| HAR | 10 |
-| ETTm1 | 13 |
-| PTB-XL | 100 |
-| S&P500 | 4 |
+#### 3.4 GroupSegment-SHAP Attribution
 
-Shapley attribution explains target-class model outputs for classification and scalar predictions for regression. Mean replacement based on a fixed sampled training background set is used as the default masking strategy.
+GS-SHAP estimates each player's marginal contribution using permutation-based Shapley approximation.
 
-#### 3.3 Deletion-Based Faithfulness
+Mean replacement is used as the default masking rule, with feature-wise means computed from the background set.
 
-The deletion evaluation projects GS-SHAP and baseline attributions onto a common cell-level map and progressively masks the highest-importance cells.
+---
 
-The paper compares:
+### 4. Experimental Setup
+
+GS-SHAP is evaluated on four multivariate time-series datasets spanning different application domains.
+
+| Dataset | Domain | Prediction Task | Window Size |
+|---|---|---|---:|
+| HAR | Human activity recognition | Classification | 96 |
+| ETTm1 | Power-system forecasting | Regression | 128 |
+| PTB-XL | Medical signal analysis | Classification | 1000 |
+| S&P500 | Financial time series | Regression | 20 |
+
+The main experiments use a fixed BiLSTM predictor across the four datasets to isolate the effect of explainer design.
+
+GS-SHAP is compared with:
 
 - KernelSHAP
 - TimeSHAP
 - SequenceSHAP
 - WindowSHAP
 - TSHAP
-- GS-SHAP
 
-under matched prediction models, samples, background sets, masking rules, and model-query budgets whenever applicable.
-
-#### 3.4 Synthetic Ground-Truth Recovery
-
-Controlled synthetic experiments evaluate whether each explanation method recovers predefined multivariate-temporal target structures.
-
-Three settings are considered:
-
-- **Single:** one target-generating group-segment player
-- **Two:** two target-generating group-segment players
-- **Distractor:** correlated but target-irrelevant group-segment patterns
-
-Recovery is evaluated using **Cell IoU** and **Player IoU**.
-
-Because the synthetic ground-truth patterns are constructed as group-segment structures, this evaluation is structurally aligned with GS-SHAP and should be interpreted as controlled evidence of structural recovery rather than an unbiased comparison across all possible attribution structures.
-
-#### 3.5 Additional Analyses
-
-The released experiments also cover:
-
-- HSIC vs. Pearson/random/single-feature grouping
-- HSIC–MMD component ablation
-- Static vs. dynamic HSIC grouping
-- Minimum-segment-length sensitivity
-- Masking-baseline sensitivity
-- Transformer backbone evaluation
-- Mamba backbone evaluation
-- Player-space reduction
-- Runtime analysis
-
-#### 3.6 Smoke Test
-
-Lightweight smoke tests are provided to validate the experiment pipeline.
-
-```bash
-python scripts/deletion_experiment.py --smoke
-python scripts/synthetic_recovery_experiment.py --smoke
-```
+Additional backbone evaluations are conducted with Transformer and Mamba models.
 
 ---
 
-### 4. Data
+### 5. Main Experiments
 
-The study evaluates GS-SHAP on four multivariate time-series datasets.
+#### 5.1 Faithfulness Evaluation
 
-| Dataset | Domain | Prediction Task | Window Size |
-|---|---|---|---:|
-| HAR | Human activity recognition | Classification | 96 |
-| ETTm1 | Power-system forecasting | Regression | 128 |
-| PTB-XL | ECG analysis | Classification | 1000 |
-| S&P500 | Financial time series | Regression | 20 |
-
-The repository provides preprocessing utilities for constructing the inputs used in the paper.
-
-Original datasets should be obtained from their respective data providers. Dataset files are not redistributed where separate access or licensing conditions apply.
-
----
-
-### 5. Main Results
-
-#### Deletion-Based Faithfulness
+Faithfulness is evaluated using a deletion protocol that progressively masks high-attribution cells and measures the resulting increase in prediction loss.
 
 | Method | HAR | ETTm1 | PTB-XL | S&P500 |
 |---|---:|---:|---:|---:|
@@ -197,9 +143,11 @@ Original datasets should be obtained from their respective data providers. Datas
 | TSHAP | 3.089 | 24.411 | 0.087 | 3.24×10⁻⁵ |
 | **GS-SHAP** | **3.955** | **26.524** | **0.171** | **5.94×10⁻⁵** |
 
-GS-SHAP achieves approximately **1.5× higher deletion-based faithfulness on average** than the compared baselines.
+GS-SHAP achieves a mean ΔAUC of 7.66, about 52% higher than the baseline average of 5.05.
 
-#### Synthetic Ground-Truth Recovery
+#### 5.2 Synthetic Ground-Truth Recovery
+
+Synthetic multivariate time series with controlled ground-truth structures are used to evaluate structural recovery.
 
 | Method | Avg. Cell IoU | Avg. Player IoU |
 |---|---:|---:|
@@ -210,43 +158,91 @@ GS-SHAP achieves approximately **1.5× higher deletion-based faithfulness on ave
 | TSHAP | 0.085 | 0.118 |
 | **GS-SHAP** | **0.403** | **0.538** |
 
-GS-SHAP improves average Cell IoU by **24.4%** over the strongest baseline.
+GS-SHAP improves the average Cell IoU by 24.4% over the second-best method, SequenceSHAP.
 
-#### Runtime
+#### 5.3 Feature Grouping Analysis
 
-Across approximation budgets on ETTm1, GS-SHAP runs on average **3.38× faster than TimeSHAP**.
+HSIC grouping is compared with Pearson-correlation grouping, random grouping, and no grouping.
 
-The group-segment construction reduces the original cell-level player space by an average of **96.9%** across the four datasets.
+Component-level ablation additionally evaluates:
+
+- GS-SHAP: HSIC + MMD
+- w/o HSIC: Singleton + MMD
+- w/o MMD: HSIC + count-matched fixed windows
+- w/o HSIC, MMD: Singleton + count-matched fixed windows
+
+A controlled dependency-shift experiment also compares static HSIC grouping with segment-wise dynamic regrouping.
+
+#### 5.4 Robustness and Sensitivity
+
+The paper evaluates attribution stability under different background sets and examines sensitivity to:
+
+- minimum segment length
+- mean masking
+- zero masking
+- noise masking
+
+#### 5.5 Computational Efficiency
+
+Runtime is reported under matched approximation budgets.
+
+On ETTm1, GS-SHAP runs on average 3.38× faster than TimeSHAP across the evaluated approximation budgets.
+
+The player-space analysis shows an average 96.9% reduction relative to the original cell-level input space.
 
 ---
 
-### 6. Scope of the Released Code
+### 6. S&P500 Case Study
 
-This repository contains the code used for the main computational components reported in the paper:
+The paper analyzes GS-SHAP explanations under high-volatility and stable market regimes for next-day S&P500 return prediction.
 
-- dataset preprocessing
+The case study shows that GS-SHAP localizes model contributions to specific combinations of feature groups and temporal intervals, revealing regime-dependent shifts in the model's information sources.
+
+---
+
+### 7. Smoke Test
+
+```bash
+python scripts/deletion_experiment.py --smoke
+python scripts/synthetic_recovery_experiment.py --smoke
+```
+
+---
+
+### 8. Data
+
+The experiments use:
+
+- UCI Human Activity Recognition (HAR)
+- ETTm1
+- PTB-XL
+- S&P500 financial time-series data
+
+Dataset preprocessing utilities are provided under `preprocessing/`.
+
+Original datasets should be obtained from their respective data providers.
+
+---
+
+### 9. Scope of the Released Code
+
+This repository contains the implementation for the main computational components reported in the paper, including:
+
 - HSIC-based feature grouping
 - MMD-based temporal segmentation
 - group-segment player construction
-- permutation-based Shapley attribution
+- Shapley attribution
+- dataset preprocessing
 - deletion-based faithfulness evaluation
-- synthetic ground-truth recovery
-- grouping analyses
-- component ablations
+- synthetic recovery evaluation
+- grouping and ablation experiments
 - sensitivity analyses
 - backbone generalization
-- runtime evaluation
-- player-space analysis
-
-Figure-rendering and camera-ready manuscript post-processing files are not part of the core released implementation.
-
----
+- runtime and player-space analyses
 
 <br>
 
 ## Citation
-
-If you use this code or GS-SHAP in your research, please cite:
 
 ```bibtex
 @inproceedings{kim2026groupsegment,
