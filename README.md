@@ -11,7 +11,8 @@
 [![Conference](https://img.shields.io/badge/Conference-CIKM_'26-blue?style=for-the-badge)](https://cikm2026.diag.uniroma1.it/)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.06114-b31b1b?style=for-the-badge)](https://arxiv.org/abs/2601.06114)
 
-<!-- Main figure will be inserted here -->
+<img width="5796" height="2520" alt="image" src="https://github.com/user-attachments/assets/8e2110f8-0a0d-4735-9b22-599edf7596da" />
+
 
 ## Abstract
 
