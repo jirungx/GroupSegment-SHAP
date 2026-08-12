@@ -1,0 +1,20 @@
+# Manifest
+
+- `DEPENDENCIES.md`
+- `MANIFEST.md`
+- `README.md`
+- `gsshap/__init__.py`
+- `gsshap/datasets.py`
+- `gsshap/deletion.py`
+- `gsshap/evaluation.py`
+- `gsshap/explainers.py`
+- `gsshap/hsic.py`
+- `gsshap/models.py`
+- `gsshap/segmentation.py`
+- `gsshap/shapley.py`
+- `gsshap/training.py`
+- `preprocessing/__init__.py`
+- `preprocessing/prepare_dataset.py`
+- `scripts/__init__.py`
+- `scripts/deletion_experiment.py`
+- `scripts/synthetic_recovery_experiment.py`
